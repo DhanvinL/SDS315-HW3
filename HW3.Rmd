@@ -1,0 +1,331 @@
+---
+title: "HW3"
+author: "Dhanvin Lakshmisha"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+---
+
+Dhanvin Lakshmisha
+
+dl37833
+
+SDS 315
+
+GitHub link - https://github.com/DhanvinL/SDS315-HW3
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(knitr)
+library(mosaic)
+
+
+gasprices <- read.csv("gasprices.csv")
+sclass <- read.csv("sclass.csv")
+nbc <- read.csv("nbc_pilotsurvey.csv")
+ebay <- read.csv("ebay.csv")
+
+```
+
+
+## Question 1 - 
+
+### Theory A - 
+
+They theory should logically hold true because if there are competitors in sight, then gas stations should provide relatively low gas prices to be a competitive gas provider in their area. 
+
+Here is a boxplot describing the median and range of prices between gas stations with competitors than those without competitors near.
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+
+
+
+summary_stats <- gasprices |>
+  group_by(Competitors) |>
+  summarize(mean_price = mean(Price, na.rm = TRUE),
+            sd_price = sd(Price, na.rm = TRUE),
+            n = n())
+
+
+t_test_result <- t.test(Price ~ Competitors, data = gasprices, var.equal = FALSE)$conf.int
+
+
+
+ggplot(gasprices) + 
+  geom_boxplot(aes(x = Competitors, y = Price, fill = Competitors)) + 
+  labs(
+    x = "Competitor Nearby", 
+    y = "Gas Price", 
+    title = "Gas Prices by Competitor Presence"
+  )
+
+t_test_result
+```
+
+
+The confident interval for the difference of means is given above as well. We are 95% confident that the interval -0.00847 to .05544 contains the true difference in means between gas prices of gas stations with and without competitors. The theory is not supported by the data. It was stated that the price of gas in gas stations without competitors will be higher, but the confidence interval's lowerbound is a negative number. This indicates that gas stations without competitors could be less expensive in some cases. Also, because the interval passes through 0, the prices could also be the same. Thus, the original theory of higher price of gas in gas stations without competitors does not hold up. 
+
+### Theory B
+
+
+Gas prices will be more expensive in affluent areas than non-affluent areas due to companies wanting to take advantage of the greater wealth of people in affluent areas.
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+
+
+ggplot(gasprices) + 
+  geom_point(aes(x = Income, y = Price)) + 
+  geom_smooth(aes(x = Income, y = Price), method = "lm", se = TRUE, color = "blue") + 
+  labs(
+    x = "Median Income", 
+    y = "Gas Price", 
+    title = "Gas Prices vs. Income"
+  )
+
+
+lm_model <- lm(Price ~ Income, data = gasprices)
+
+
+
+confint(lm_model)
+
+```
+
+Above is a graph shows a possible correlation between median income and gas price with the gray area in the graph representing confident intervals. Also a 95 confidence interval is given above which displays the possible y-intercept and slope values. Because the 95 percent confidence interval computed and on the graph shows that a slope of 0 or less is not possible, we can say that there is a positive increasing correlation between median income and gas prices. This supports the statement on the theory I provided and backs up the theory itself.
+
+
+### Theory C
+
+The gas prices of gas stations at stoplights may be higher than non-stop light gas stations due to companies taking advantage of how convenient it is to access their gas station since a car can easily turn into the gas station. 
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+summary_stats <- gasprices |>
+  group_by(Stoplight) |>
+  summarize(mean_price = mean(Price, na.rm = TRUE),
+            sd_price = sd(Price, na.rm = TRUE),
+            n = n())
+
+# Confidence Interval for Difference in Means
+t_test_result <- t.test(Price ~ Stoplight, data = gasprices, var.equal = FALSE)$conf.int
+
+
+# Visualization: Boxplot
+ggplot(gasprices) + 
+  geom_boxplot(aes(x = Stoplight, y = Price, fill = Stoplight)) + 
+  labs(
+    x = "Stoplight", 
+    y = "Gas Price", 
+    title = "Gas Prices by Stoplight Presence"
+  )
+
+t_test_result
+
+```
+
+The medians of the boxplots seemingly support that stop light gas stations have higher prices. However, looking at the range and IQR of the boxplots, there is a chance that non-stop light gas stations are more expensive. The confidence interval between -0.0318 to 0.0384 further supports this. We are 95 percent confident that the true difference between the mean gas station prices of non-stop light and stop light locations lies between that range. The lower bound of the range being negative suggests that that non-stop light gas stations may be more expensive or they may be the same as stop light gas stations. Thus, my statement on the theory and the theory itself are not supported due to the negative lower bound on the confidence interval. 
+
+
+### Theory D
+
+Gas prices for gas stations with direct highway access should charge more due to how convenient and easy it is to leave the highway, fill up gas, and be back on route. 
+
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+summary_stats <- gasprices |>
+  group_by(Highway) |>
+  summarize(mean_price = mean(Price, na.rm = TRUE),
+            sd_price = sd(Price, na.rm = TRUE),
+            n = n())
+
+t_test_result <- t.test(Price ~ Highway, data = gasprices, var.equal = FALSE)$conf.int
+
+
+
+ggplot(gasprices) + 
+  geom_boxplot(aes(x = Highway, y = Price, fill = Highway)) + 
+  labs(
+    x = "Highway Access", 
+    y = "Gas Price", 
+    title = "Gas Prices by Highway Access"
+  )
+t_test_result
+
+```
+
+The medians of the box plot show that gas stations with no highway access generally have lower prices. However, the difference in ranges and IQRs of both boxplots may contradict my statement. However, looking at the confidence interval between -0.0833 and -0.0080, the statement appears to hold. We are 95 percent confident that the difference in means of gas prices between highway and non-highway gas stations is in that interval. Due to the lower and upper bound of that interval being negative, we can conclude, to a 95 percent confidence degree, that gas stations without highway access have lower prices than gas stations with highway access. 
+
+
+### Theory E
+
+The brand of the gas station should have no impact of the gas prices, as it is stated in the question introduction that most gas stations(at least the ones in the data) have the same type of gas. It would be unreasonable for a company to generally charge higher or lower than its competitors without any basis of outside variables. So Shell and non-Shell gas stations should have little to no gas price difference.
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+summary_stats <- gasprices |>
+  group_by(Brand) |>
+  summarize(mean_price = mean(Price, na.rm = TRUE),
+            sd_price = sd(Price, na.rm = TRUE),
+            n = n())
+
+
+gasprices <- gasprices |>
+  mutate(Shell = ifelse(Brand == "Shell", "Shell", "Non-Shell"))
+
+t_test_result <- t.test(Price ~ Shell, data = gasprices, var.equal = FALSE)$conf.int
+
+
+ggplot(gasprices) + 
+  geom_boxplot(aes(x = Shell, y = Price, fill = Shell)) + 
+  labs(
+    x = "Brand", 
+    y = "Gas Price", 
+    title = "Gas Prices: Shell vs. Non-Shell"
+  )
+t_test_result
+
+
+```
+
+However, on glance, the medians of the boxplots are different which may support that Shell gas prices are generally higher than that of non-Shell brands. Despite this contradiction, the ranges and IQRs of the boxplots may show little to no difference. This is confirmed by the confidence interval which is from -0.0660 to .0112. We are 95 percent confident that this range contains the true mean difference in gas price between Shell and non-Shell gas stations. My statement provided and original theory are generally true due to this interval. There could be instances where gas prices are higher, lower, or the same for either Shell or non-Shell brands. Thus, there is a chance for every instance based on the confidence interval. 
+
+
+## Question 2 - 
+
+
+### Part A
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+sclass_2011_63AMG <- sclass |> 
+  filter(year == 2011, trim == "63 AMG")
+
+boot_mileage <- do(10000) * mean(~mileage, data = resample(sclass_2011_63AMG))
+
+confint(boot_mileage, level = 0.95)
+
+```
+
+
+We are 95 percent confident that the interval contains the true mean mileage of 2011 S-Class 63 AMGs that were in the used-car market.
+
+
+### Part B
+
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+sclass_2014_550 <- sclass |> filter(year == 2014, trim == "550")
+
+sclass_2014_550 <- sclass_2014_550 |> mutate(isBlack = color == "Black")
+
+boot_black <- do(10000) * prop(~isBlack, data = resample(sclass_2014_550))
+
+confint(boot_black, level = 0.95)
+
+
+```
+
+
+We are 95 percent confident that the interval contains the true proportion of 2014 S-Class 550s that were painted black.
+
+
+
+## Question 3
+
+
+### Part A
+
+We are trying to find if there is a significant difference between the mean happiness of viewers watching "Living with Ed" and "My Name is Earl." To find if there is a difference, we can run a simulation through bootstrapping and find a 95 percent confidence interval which outputs the probable interval for which the true difference of mean happiness of viewers between the two shows lie. If the confidence interval does not contain 0, there is a significant difference between the two shows.
+
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+
+
+nbc_happy <- nbc |> 
+  filter(Show == "Living with Ed" | Show == "My Name is Earl")
+
+boot_happy <- do(10000) * 
+  diffmean(Q1_Happy ~ Show, data = resample(nbc_happy))
+
+confint(boot_happy, level = 0.95)
+
+```
+
+
+Because the confidence interval contains 0, we cannot be certain that there is a difference of mean happiness (of the Q1_Happy variable) between the two shows from the viewers.  
+
+
+### Part B
+
+We are trying to find if there is a significant difference between the mean rating of annoyingness (or a difference in the Q1_Annoyed variable) of viewers watching "The Biggest Lose" and "The Apprentice: Los Angeles." To find if there is a difference, we can run a simulation through bootstrapping and find a 95 percent confidence interval which outputs the probable interval for which the true difference of the Q1_Annoyed variable between the two shows lie. If the confidence interval does not contain 0, there is a significant difference between the two shows.
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+
+nbc_annoyed <- nbc |> 
+  filter(Show == "The Biggest Loser" | Show == "The Apprentice: Los Angeles")
+
+
+boot_annoyed <- do(10000) * 
+  diffmean(Q1_Annoyed ~ Show, data = resample(nbc_annoyed))
+
+
+confint(boot_annoyed, level = 0.95)
+
+
+```
+
+The bootstrap simulation's 95 percent confidence interval only contains negative values. Thus, we are 95 percent confident that The Biggest Loser's mean Q1_Annoyed rating is less than that of "The Apprentice: Los Angeles." People feel less annoyed generally when watching "The Biggest Loser" than "The Apprentice: Los Angeles."
+
+
+### Part C
+
+
+We are trying to find whether the viewers are more or less likely to find the show "Dancing with the Stars" confusing. To find that, we can run a simulation through bootstrapping and find the true proportion of viewers who find the show confusing (based on whether they gave a rating of 4 or 5) from a 95 percent confidence interval.  
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+
+nbc_confusing <- nbc |> 
+  filter(Show == "Dancing with the Stars")
+
+
+nbc_confusing <- nbc_confusing |> 
+  mutate(isConfusing = Q2_Confusing >= 4)
+
+boot_confusing <- do(10000) * prop(~isConfusing, data = resample(nbc_confusing))
+
+confint(boot_confusing, level = 0.95)
+
+```
+
+We are 95 percent confident that the interval contains the true proportion of viewers who find the show confusing. The confidence interval suggests that a relatively low proportion of viewers find the show confusing. The majority of viewers do not find the show confusing, meaning they may have a rating below 4. 
+
+
+
+
+## Question 4
+
+We are exploring whether paid search ads on Google significantly lower or increase eBay's revenue, as measured by the revenue ratio in treated versus control DMAs. After computing the revenue ratio, we can run a simulation through bootstrapping and construct a 95 percent confidence interval for the difference in mean revenue ratios between the two treatment groups. 
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+ebay <- ebay |> 
+  mutate(revenue_ratio = rev_after / rev_before)
+
+boot_revenue_ratio <- do(10000) * 
+  diffmean(revenue_ratio ~ adwords_pause, data = resample(ebay))
+
+
+confint(boot_revenue_ratio, level = 0.95)
+
+```
+
+The 95 percent confidence interval tell us that the true mean difference between the treatment groups lies somewhere in that interval. The interval being entirely negative suggests that revenue ratio was lower in the treatment group compared to the control group. In context, this means that turning off paid search ads led to a lower revenue ratio. Thus, the paid ads to Google do contribute to Ebay's revenue.
+
+
+
+
+
+
+
+
+
+
+
+
